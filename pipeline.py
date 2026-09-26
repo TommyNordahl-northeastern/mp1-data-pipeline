@@ -18,6 +18,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from data_loaders import load_data
 
 logging.basicConfig(
     level=logging.INFO,
@@ -85,6 +86,10 @@ def main():
                  f"verbose={args.verbose}") # 3. Log the parsed arguments (DEBUG)
     input_bool = validate_input(args.input)
     if not input_bool:
+        sys.exit(1)
+    try:
+        data = load_data(args.input)
+    except ValueError:
         sys.exit(1)
         
     

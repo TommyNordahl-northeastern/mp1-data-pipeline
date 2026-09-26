@@ -2,6 +2,10 @@
 __pycache__/
 *.py[cod]
 *.pyc
+venv/
+data/
+*.md
+!requirements.txt
 
 # IDE
 .vscode/
