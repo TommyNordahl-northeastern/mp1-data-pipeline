@@ -3,9 +3,12 @@ __pycache__/
 *.py[cod]
 *.pyc
 venv/
+
+# Files
 data/
 *.md
 !requirements.txt
+cleaned_data.csv
 
 # IDE
 .vscode/

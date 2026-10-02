@@ -15,19 +15,20 @@ logger = logging.getLogger(__name__)
 def load_csv(filepath):
     """Load a CSV file into a DataFrame."""
     df = pd.read_csv(filepath)
-    logging.info(f"Loaded CSV File: {filepath} ({len(df)} rows)")
+    logger.info(f"Loaded CSV File: {filepath} ({len(df)} rows)")
     return df
 
 def load_json(filepath):
     """Load a JSON file into a Python object (dict or list)."""
     file_dct = json.load(filepath)
-    logging.info(f"Loaded a JSON File: {filepath}")
+    logger.info(f"Loaded a JSON File: {filepath}")
     return file_dct
 
 def load_yaml(filepath):
     """Load a YAML file into a Python object."""
-    file_yaml = yaml.safe_load(filepath)
-    logging.info(f"Loaded a YAML File: {filepath}")
+    with open(filepath) as f:
+        file_yaml = yaml.safe_load(f)
+    logger.info(f"Loaded a YAML File: {filepath}")
     return file_yaml
 
 def load_data(filepath):
@@ -40,6 +41,6 @@ def load_data(filepath):
     elif path.suffix in (".yaml", "yml"):
         return load_yaml(path)
     else:
-        logging.error(f"Unsupported file format: {path.suffix}")
+        logger.error(f"Unsupported file format: {path.suffix}")
         raise ValueError
 

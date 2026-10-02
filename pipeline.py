@@ -19,22 +19,15 @@ import logging
 import sys
 from pathlib import Path
 from data_loaders import load_data
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)-8s %(message)s",
-    datefmt="%H:%M:%S"
-)
-
+from data_processor import process_data, create_cleaning_report
 logger = logging.getLogger(__name__)
 
 def setup_logging(verbose=False):
     """Configure logging for the pipeline."""
-    if verbose:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
-
+    logging.basicConfig(
+    level=logging.DEBUG if verbose else logging.INFO,
+    format="%(asctime)s %(levelname)-8s %(name)s - %(message)s",
+    datefmt="%H:%M:%S")
 
 def parse_arguments():
     """Parse command-line arguments."""
@@ -47,15 +40,14 @@ def parse_arguments():
         help="Path to the input file"
     )
     parser.add_argument(
+            "--config", "-c",
+            default="config.yaml",
+            help="Config file (yaml)"
+        )
+    parser.add_argument(
         "--output", "-o",
         required=True,
         help="Path to the output file"
-    )
-    parser.add_argument(
-        "--format", 
-        default="csv",
-        choices=["csv", "json"],
-        help="Output format: csv or json, default is csv"
     )
     parser.add_argument(
         "--verbose", "-v",
@@ -82,15 +74,28 @@ def main():
     setup_logging(args.verbose) # 2. setup loggin with verbose
 
     logger.debug(f"Arguments parsed: input='{args.input}', " \
-                 f"output='{args.output}', format='{args.format}', " \
+                 f"output='{args.output}', " \
                  f"verbose={args.verbose}") # 3. Log the parsed arguments (DEBUG)
     input_bool = validate_input(args.input)
-    if not input_bool:
+    config_bool = validate_input(args.config)
+    if not input_bool or not config_bool:
         sys.exit(1)
     try:
         data = load_data(args.input)
+        config = load_data(args.config)
     except ValueError:
         sys.exit(1)
+
+    data_original = data.copy()
+    try:
+        data = process_data(df=data, config=config)
+    except ValueError:
+        sys.exit(1)
+    report = create_cleaning_report(df_before=data_original, df_after=data)
+    logger.info(f"Processing report finished: {report["rows_removed"]} rows removed")
+    data.to_csv(args.output, index=False)
+    logger.info(f"Saved data to {args.output}")
+    print(f"\n Cleaning report:\n {report}")
         
     
 
