@@ -9,6 +9,7 @@ data/
 *.md
 !requirements.txt
 cleaned_data.csv
+md_files/
 
 # IDE
 .vscode/
