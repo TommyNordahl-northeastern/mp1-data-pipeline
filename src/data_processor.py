@@ -8,7 +8,7 @@ def remove_duplicates(df):
     """Remove duplicate rows."""
     before = df.copy()
     df = df.drop_duplicates()
-    logger.debug(f"{len(before) - len(df)} duplicate rows removed")
+    logger.debug(f"remove_duplicates: {len(before)} -> {len(df)} rows")
     return df
 
 
@@ -23,7 +23,7 @@ def handle_missing(df, axis="rows"):
         df = df.dropna()
     elif axis == "columns":
         df = df.dropna(axis=1)
-    logger.debug(f"{len(before) - len(df)} {axis} with missing values removed")
+    logger.debug(f"handle_missing: {len(before)} -> {len(df)} rows")    
     return df
 
 def remove_outliers(df, columns, method, threshold):
@@ -48,9 +48,6 @@ def remove_outliers(df, columns, method, threshold):
                 lower = q1 - threshold * iqr
                 upper = q3 + threshold * iqr
                 df_cleaned = df[(df[column] >= lower) & (df[column] <= upper)]
-                logger.debug(f"{column}: lower={lower}, upper={upper}, threshold ={threshold},"
-                            f"removed{len(before) - len(df_cleaned)}")
-                return df_cleaned
     elif method == "zscore":
         for column in columns:
             if column not in df.columns:
@@ -64,9 +61,9 @@ def remove_outliers(df, columns, method, threshold):
                 std = df[column].std()
                 z_scores = (df[column] - mu) / std
                 df_cleaned = df[z_scores.abs() < threshold]
-                logger.debug(f"Z-score cleaning completed for {column}. Threshold: {threshold} standard deviations. "
-                                f"Rows removed = {len(before) - len(df_cleaned)}")
-                return df_cleaned
+    logger.debug(f"{column}: method={method}, threshold ={threshold}," 
+                 f"removed={len(before) - len(df_cleaned)}")
+    return df_cleaned
 
 def process_data(df, config):
     """Apply the processing steps enabled in the configuration."""

@@ -18,16 +18,17 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from data_loaders import load_data
-from data_processor import process_data, create_cleaning_report
-logger = logging.getLogger(__name__)
+from src import(
+    create_cleaning_report,
+    load_data,
+    process_data,
+    save_data,
+    setup_logging,
+    validate_dataframe,
+    validate_input
+)
 
-def setup_logging(verbose=False):
-    """Configure logging for the pipeline."""
-    logging.basicConfig(
-    level=logging.DEBUG if verbose else logging.INFO,
-    format="%(asctime)s %(levelname)-8s %(name)s - %(message)s",
-    datefmt="%H:%M:%S")
+logger = logging.getLogger(__name__)
 
 def parse_arguments():
     """Parse command-line arguments."""
@@ -57,47 +58,58 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def validate_input(filepath):
-    """Check whether the input path exists and is a file."""
-    p = Path(filepath)
-    if not p.is_file():
-        logger.error(f"Input file not found: '{filepath}'")
-        return False
-    else:
-        logger.info(f"Input file validated: '{filepath}'")
-        return True
-
-
 def main():
     """Main pipeline function."""
-    args = parse_arguments() # 1. parse the command line arguments
-    setup_logging(args.verbose) # 2. setup loggin with verbose
+    args = parse_arguments() # parse the command line arguments
+    setup_logging(args.verbose) # setup loggin with verbose
 
+    # log arguments parsed at the DEBUG level
     logger.debug(f"Arguments parsed: input='{args.input}', " \
                  f"output='{args.output}', " \
-                 f"verbose={args.verbose}") # 3. Log the parsed arguments (DEBUG)
+                 f"verbose={args.verbose}")
+
+    # validate input and config files from command line, exit if either are false
     input_bool = validate_input(args.input)
     config_bool = validate_input(args.config)
     if not input_bool or not config_bool:
         sys.exit(1)
+
+    # try to load data from input and config files, excepting ValueError
     try:
         data = load_data(args.input)
         config = load_data(args.config)
     except ValueError:
         sys.exit(1)
 
+    # save a copy of original data
     data_original = data.copy()
+
+    required_cols = config["validation"]["required_columns"]
+    numeric_cols = config["validation"]["numeric_columns"]
+    try:
+        data = validate_dataframe(df=data, required_columns=required_cols, numeric_columns=numeric_cols)
+        logger.info(f"{len(data_original) - len(data)} rows removed through numeric validation. All required columns present.")
+    except ValueError:
+        sys.exit(1)
+
+    data_original = data.copy()
+
+    # use process_data with config settings within a try block
     try:
         data = process_data(df=data, config=config)
     except ValueError:
         sys.exit(1)
+
+    # create and log cleaning report
     report = create_cleaning_report(df_before=data_original, df_after=data)
-    logger.info(f"Processing report finished: {report["rows_removed"]} rows removed")
-    data.to_csv(args.output, index=False)
-    logger.info(f"Saved data to {args.output}")
-    print(f"\n Cleaning report:\n {report}")
-        
+    logger.info(f"Processing complete: {report["rows_before"]} -> {report["rows_after"]}")
+
+    # write data to the output csv
+    save_data(data, args.output)
+    logger.info(f"Saved cleaned data to {args.output}")
     
+    # print full cleaning report
+    print(f"\n Cleaning report:\n {report}")
 
 if __name__ == "__main__":
     main()

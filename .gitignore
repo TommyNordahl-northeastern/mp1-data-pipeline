@@ -4,12 +4,13 @@ __pycache__/
 *.pyc
 venv/
 
-# Files
+# Implementation files
 data/
 *.md
 !requirements.txt
 cleaned_data.csv
 md_files/
+output/
 
 # IDE
 .vscode/
